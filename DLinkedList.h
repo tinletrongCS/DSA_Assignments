@@ -3,7 +3,7 @@
 * Faculity of Computer Science and Engineering
 * Author: Le Trong Tin
 * ID: 2313452
-* Date: October 6th 2024
+* Date: November 10th, 2024
 */
 /*
  * File:   DLinkedList.h
@@ -296,8 +296,19 @@ public:
             pNode = pNode->prev;
             return *this;
         }
+        BWDIterator &operator--()
+        {
+            pNode = pNode->prev;
+            return *this;
+        }
         // Postfix ++ overload
         BWDIterator operator++(int)
+        {
+            Iterator iterator = *this;
+            ++*this;
+            return iterator;
+        }
+        BWDIterator operator--(int)
         {
             Iterator iterator = *this;
             ++*this;
@@ -380,8 +391,8 @@ DLinkedList<T> &DLinkedList<T>::operator=(const DLinkedList<T> &list)
     this->deleteUserData = list.deleteUserData;
     this->itemEqual = list.itemEqual;
 
-    Node *current = list->head;
-    while (current != current->tail)
+    Node *current = list.head;
+    while (current != list.tail)
     {
         this->add(current->data);
         current = current->next;
@@ -410,7 +421,6 @@ void DLinkedList<T>::add(T e)
     tail->prev = new_node;
 
     this->count++;
-
 }
 
 // add(index, e)
@@ -527,20 +537,19 @@ T DLinkedList<T>::removeAt(int index)
 template <class T>
 bool DLinkedList<T>::removeItem(T item, void (*removeItemData)(T))
 {
-    if (!contains(item)) return false;
-    Node *tmp = this->head->next;
-    while (tmp != nullptr)
-    {
-        if (equals(tmp->data, item, itemEqual))
-        {
-            tmp->prev->next = tmp->next;
-            tmp->next->prev = tmp->prev;
-            tmp->prev->next = tmp->next;
-            delete tmp;
-            this->count--;
+    Node* hientai=head->next;
+    for(int i=0; i<this->size(); i++){
+        if (equals(hientai->data, item, itemEqual)) {
+            Node* tuonglai=hientai->next;
+            Node* quakhu=hientai->prev;
+            (hientai->prev)->next=tuonglai;
+            (hientai->next)->prev=quakhu;
+            if (removeItemData!= nullptr) removeItemData(hientai->data);
+            if(hientai!=nullptr) delete hientai;
+            count--;
             return true;
         }
-        tmp = tmp->next;
+        hientai=hientai->next;
     }
     return false;
 }
