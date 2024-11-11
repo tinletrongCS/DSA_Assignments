@@ -43,17 +43,10 @@ xt::xarray<double> Softmax::forward(xt::xarray<double> X) {
 }
 
 xt::xarray<double> Softmax::backward(xt::xarray<double> DY) {
-  // Lấy giá trị cached của Y từ forward pass
     xt::xarray<double> Y = this->m_aCached_Y;
-
-    // Ma trận đường chéo của Y
     xt::xarray<double> diag_Y = xt::diag(Y);
     xt::xarray<double> outer_Y = xt::linalg::outer(Y, Y);
-
-    // Tính ma trận Jacobian
     xt::xarray<double> jacobian = diag_Y - outer_Y;
-
-    // Tính gradient của Z dựa trên Jacobian và DY
     xt::xarray<double> DZ = xt::linalg::dot(jacobian, DY);
 
     return DZ;
