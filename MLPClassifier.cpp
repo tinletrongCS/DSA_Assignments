@@ -1,9 +1,5 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt
- * to change this license Click
- * nbfs://nbhost/SystemFileSystem/Templates/cppFiles/class.cc to edit this
- * template
- */
+// FILE NỘP BÀI CHÍNH THỨC
+//------------------------------------------oOo--------------------
 
 /*
  * File:   Model.cpp
@@ -56,9 +52,8 @@ MLPClassifier::~MLPClassifier()
     delete ptr_layer;
 }
 
-
-//CHO MỘT MẪU DỮ LIỆU
-// for the inference mode: begin
+// CHO MỘT MẪU DỮ LIỆU
+//  for the inference mode: begin
 double_tensor MLPClassifier::predict(double_tensor X, bool make_decision)
 {
   cout << "running prediction for a single data sample" << endl;
@@ -84,9 +79,7 @@ double_tensor MLPClassifier::predict(double_tensor X, bool make_decision)
     return xt::argmax(Y, -1);
 }
 
-
-//CHO MỘT BÓ DỮ LIỆU
-
+// CHO MỘT BÓ DỮ LIỆU
 double_tensor MLPClassifier::predict(DataLoader<double, double> *pLoader,
                                      bool make_decision)
 {
@@ -104,32 +97,40 @@ double_tensor MLPClassifier::predict(DataLoader<double, double> *pLoader,
                             "Num. of samples processed");
   cout << info;
 
-  // int total_batch = pLoader->get_total_batch();
+  int total_batch = pLoader->get_total_batch();
   int batch_idx = 1;
   unsigned long long nsamples = 0;
+
+  int total_data = pLoader->get_sample_count();
+  int nclasses = 0;
+  int start = 0;
 
   for (auto batch : *pLoader)
   {
     double_tensor X = batch.getData();
     double_tensor Y = this->forward(X);
-    // lấy nhãn dự đoán hoặc xác suất
+
     if (make_decision)
     {
       Y = xt::argmax(Y, -1);
     }
-    // nếu là batch đầu tiên gán kết quả là Y trước
+
     if (first_batch)
     {
-      results = Y;
+      // results = Y;
+      int nclasses = Y.shape()[1];
+      results = xt::zeros<double>({total_data, nclasses});
       first_batch = false;
     }
 
-    // các batch sau thì cộng dồn lại
-    else
-    {
-      results += Y;
-    }
+    int end = start + X.shape()[0];
+    xt::view(results, xt::range(start, end), xt::all()) = Y;
+    start = end;
+
+    nsamples += X.shape()[0];
+    batch_idx++;
   }
+
   cout << "Prediction: End" << endl;
 
   // restore the old mode
@@ -149,7 +150,7 @@ double_tensor MLPClassifier::evaluate(DataLoader<double, double> *pLoader)
 
   ClassMetrics meter(this->get_num_classes());
   meter.reset_metrics();
-  // TODO 
+  // TODO
   for (auto batch : *pLoader)
   {
     double_tensor X = batch.getData();
@@ -204,7 +205,7 @@ void MLPClassifier::set_working_mode(bool trainable)
 double_tensor MLPClassifier::forward(double_tensor X)
 {
   double_tensor Y = X;
-  for (typename DLinkedList<ILayer*>::Iterator it = m_layers.begin(); it != m_layers.end(); it++)
+  for (typename DLinkedList<ILayer *>::Iterator it = m_layers.begin(); it != m_layers.end(); it++)
   {
     ILayer *pLayer = *it;
     Y = pLayer->forward(Y);
