@@ -1,49 +1,55 @@
 /*
- * Faculity of Computer Science and Engineering
- * Author: Le Trong Tin
- * ID: 2313452
- * Date: October 6th 2024
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/cppFiles/file.h to edit this template
  */
+
 /*
-* Update: October 8th 2024
-* 10:25 PM
+ * File:   dataloader.h
+ * Author: ltsach
+ *
+ * Created on September 2, 2024, 4:01 PM
+ */
+
+/*
+Người thực hiện : Lê Trọng Tín
+MSSV : 2313452
+Ngày thực hiện : 01 tháng 11 năm 2024 
 */
+
 #ifndef DATALOADER_H
 #define DATALOADER_H
-#include "ann/xtensor_lib.h"
-#include "ann/dataset.h"
+#include "tensor/xtensor_lib.h"
+#include "loader/dataset.h"
+
 using namespace std;
 
 template <typename DType, typename LType>
 class DataLoader
 {
 public:
-    class Iterator; // forward declaration
+    class Iterator; // forward declaration for class Iterator
 
 private:
     Dataset<DType, LType> *ptr_dataset;
     int batch_size;
     bool shuffle;
     bool drop_last;
+    int nbatch;
+    ulong_tensor item_indices;
     int m_seed;
-
-    int num_batches;
-    xt::xarray<unsigned long> indices;
     TensorDataset<DType, LType> *tensor_pointer;
 
 public:
-    DataLoader(Dataset<DType, LType> *ptr_dataset, int batch_size, bool shuffle = true, 
-    bool drop_last = false, int seed = -1)
+    DataLoader(Dataset<DType, LType> *ptr_dataset,
+               int batch_size, bool shuffle = true,
+               bool drop_last = false, int seed = -1)
+        : ptr_dataset(ptr_dataset),
+          batch_size(batch_size),
+          shuffle(shuffle),
+          m_seed(seed)
     {
-        this->ptr_dataset = ptr_dataset;
-        this->batch_size = batch_size;
-        this->shuffle = shuffle;
-        this->drop_last = drop_last;
-        this->m_seed = seed;
-
-        this->num_batches = ptr_dataset->len() / this->batch_size;
-
-        this->indices = xt::arange(0, ptr_dataset->len());
+        nbatch = ptr_dataset->len() / batch_size;
+        item_indices = xt::arange(0, ptr_dataset->len());
         if (this->shuffle)
         {
             // seed >= 0 thì xử lí seed trước khi shuffle, không thì thôi
@@ -51,23 +57,34 @@ public:
             {
                 xt::random::seed(m_seed);
             }
-            xt::random::shuffle(this->indices);
+            xt::random::shuffle(this->item_indices);
         }
         this->tensor_pointer = dynamic_cast<TensorDataset<DType, LType> *>(ptr_dataset);
     }
-
     virtual ~DataLoader() {}
+
+    // New method: from V2: begin
+    int get_batch_size() { return batch_size; }
+    int get_sample_count() { return ptr_dataset->len(); }
+    int get_total_batch() { return int(ptr_dataset->len() / batch_size); }
+
+    // New method: from V2: end
+    /////////////////////////////////////////////////////////////////////////
+    // The section for supporting the iteration and for-each to DataLoader //
+    /// START: Section                                                     //
+    /////////////////////////////////////////////////////////////////////////
+public:
     Iterator begin()
     {
         return DataLoader::Iterator(this, 0);
     }
-
     Iterator end()
     {
-        return DataLoader::Iterator(this, this->num_batches);
+        return DataLoader::Iterator(this, this->get_total_batch());
     }
 
-    class Iterator
+    // BEGIN of Iterator
+        class Iterator
     {
     private:
         DataLoader *loader;
@@ -108,23 +125,23 @@ public:
         Batch<DType, LType> operator*() const
         {
             // cout << "current batch : " << this->current_batch_index << '\n';
-            int start_index = current_batch_index * loader->batch_size;
+            int start_index = current_batch_index * loader->get_batch_size();
             int end_index;
 
-            if (current_batch_index == loader->num_batches - 1)
+            if (current_batch_index == loader->get_total_batch() - 1)
             {
                 if (this->loader->drop_last)
                 {
-                    end_index = start_index + this->loader->batch_size;
+                    end_index = start_index + this->loader->get_batch_size();
                 }
                 else if (!this->loader->drop_last)
                 {
-                    end_index = this->loader->indices.size();
+                    end_index = this->loader->item_indices.size();
                 }
             }
             else
             {
-                end_index = start_index + this->loader->batch_size;
+                end_index = start_index + this->loader->get_batch_size();
             }
             // cout << "start = " << start_index << "," << "end=" << end_index << '\n';
             xt::svector<unsigned long> data_shape = loader->tensor_pointer->get_data_shape();
@@ -135,7 +152,7 @@ public:
 
             for (int i = start_index; i != end_index; ++i)
             {
-                DataLabel<DType, LType> return_item = this->loader->tensor_pointer->getitem(loader->indices[i]);
+                DataLabel<DType, LType> return_item = this->loader->tensor_pointer->getitem(loader->item_indices[i]);
                 xt::view(batch_data, i - start_index) = return_item.getData();
                 // cout << "return data item : " << return_item.getData() << '\n';
 
@@ -163,6 +180,13 @@ public:
             return Batch<DType, LType>(batch_data, batch_label);
         }
     };
+
+    // END of Iterator
+
+    /////////////////////////////////////////////////////////////////////////
+    // The section for supporting the iteration and for-each to DataLoader //
+    /// END: Section                                                       //
+    /////////////////////////////////////////////////////////////////////////
 };
 
 #endif /* DATALOADER_H */
