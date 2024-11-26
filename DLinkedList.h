@@ -1,4 +1,4 @@
-// code btl 1
+// ASSIGNMENT 2 ---------------------- *************** ----------------------
 /*
 * Faculity of Computer Science and Engineering
 * Author: Le Trong Tin
