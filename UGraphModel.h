@@ -34,15 +34,15 @@ public:
     {
     }
 
-
-    // connect OKK
     void connect(T from, T to, float weight = 0)
     {
         if (!this->contains(from))
         {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(from));
         }
         if (!this->contains(to))
         {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(to));
         }
 
         typename AbstractGraph<T>::VertexNode *nodeFrom = this->getVertexNode(from);
@@ -64,11 +64,11 @@ public:
     {
         if (!this->contains(from))
         {
-            //...
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(from));
         }
         if (!this->contains(to))
         {
-            //...
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(to));
         }
 
         typename AbstractGraph<T>::VertexNode *nodeFrom = this->getVertexNode(from);
@@ -79,7 +79,8 @@ public:
 
         if (edge == nullptr)
         {
-            // chưa biết throw sao cả...
+            typename AbstractGraph<T>::Edge tempEdge(this->getVertexNode(from), this->getVertexNode(to));
+            throw EdgeNotFoundException(AbstractGraph<T>::edge2Str(tempEdge));
         }
 
         if (nodeFrom->equals(nodeTo))
@@ -94,14 +95,50 @@ public:
     }
     void remove(T vertex)
     {
-        // TODO
+        // Xóa một đỉnh và tất cả các cạnh liên quan đến đỉnh đó
+        typename AbstractGraph<T>::VertexNode *nodeToDelete = this->getVertexNode(vertex);
+
+        if (nodeToDelete == nullptr)
+        {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(vertex));
+        }
+
+        for (auto it : this->nodeList)
+        {
+            typename AbstractGraph<T>::VertexNode *pVertex = it;
+            if (this->connected(vertex, pVertex->getVertex()))
+            {
+                nodeToDelete->removeTo(pVertex);
+            }
+
+            if (this->connected(pVertex->getVertex(), vertex))
+            {
+                pVertex->removeTo(nodeToDelete);
+            }
+        }
+
+        this->nodeList.removeItem(nodeToDelete);
+
+        delete nodeToDelete;
     }
     static UGraphModel<T> *create(
         T *vertices, int nvertices, Edge<T> *edges, int nedges,
         bool (*vertexEQ)(T &, T &),
         string (*vertex2str)(T &))
     {
-        // TODO
+        // *vertices là mảng các vertices
+        UGraphModel<T> *new_graph = new UGraphModel<T>(vertexEQ, vertex2str);
+        for (int i = 0; i < nvertices; i++)
+        {
+            new_graph->add(vertices[i]);
+        }
+        for (int i = 0; i < nedges; i++)
+        {
+            new_graph->connect(edges[i].from, edges[i].to, edges[i].weight);
+            new_graph->connect(edges[i].to, edges[i].from, edges[i].weight);
+        }
+
+        return new_graph;
     }
 };
 
