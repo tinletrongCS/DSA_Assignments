@@ -35,9 +35,11 @@ public:
     {
         if (!this->contains(from))
         {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(from));
         }
         if (!this->contains(to))
         {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(to));
         }
 
         typename AbstractGraph<T>::VertexNode *nodeFrom = this->getVertexNode(from);
@@ -47,6 +49,15 @@ public:
 
     void disconnect(T from, T to)
     {
+        if (!this->contains(from))
+        {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(from));
+        }
+        if (!this->contains(to))
+        {
+            throw VertexNotFoundException(AbstractGraph<T>::vertex2str(to));
+        }
+        
         typename AbstractGraph<T>::VertexNode *fromNode = this->getVertexNode(from);
         typename AbstractGraph<T>::VertexNode *toNode = this->getVertexNode(to);
 
