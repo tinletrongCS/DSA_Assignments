@@ -1,14 +1,13 @@
-// LÊ TRỌNG TÍN
-// MSSV 2313452
-/////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////
 /*
  * File:   AbstractGraph.h
  * Author: LTSACH
  *
  * Created on 23 August 2020, 17:48
  */
-
+/**
+ * Người thực hiện : LÊ TRỌNG TÍN
+ * MSSV : 2313452
+ */
 #ifndef ABSTRACTGRAPH_H
 #define ABSTRACTGRAPH_H
 #include "graph/IGraph.h"
@@ -105,9 +104,11 @@ public:
      */
     virtual void add(T vertex)
     {
-        VertexNode *newVertex = new VertexNode();
-        newVertex->vertex = vertex;
-        this->nodeList.add(newVertex);
+        if (!this->contains(vertex))
+        {
+            VertexNode *newVertex = new VertexNode(vertex, this->vertexEQ, this->vertex2str);
+            this->nodeList.add(newVertex);
+        }
     }
 
     virtual bool contains(T vertex)
@@ -123,14 +124,14 @@ public:
 
     virtual float weight(T from, T to)
     {
-        if (!this->contains(to))
-        {
-            throw VertexNotFoundException(vertex2str(to));
-        }
-
-        if (!this->contains(from))
+        if (!this->getVertexNode(from))
         {
             throw VertexNotFoundException(vertex2str(from));
+        }
+
+        if (!this->getVertexNode(to))
+        {
+            throw VertexNotFoundException(vertex2str(to));
         }
 
         VertexNode *node = this->getVertexNode(from);
@@ -151,7 +152,7 @@ public:
 
     virtual DLinkedList<T> getOutwardEdges(T from)
     {
-        if (this->getVertexNode(from) == nullptr)
+        if (!this->getVertexNode(from))
         {
             throw VertexNotFoundException(vertex2str(from));
         }
@@ -164,7 +165,7 @@ public:
     {
         DLinkedList<T> inwardEdges;
 
-        if (!this->contains(to))
+        if (!this->getVertexNode(to))
         {
             throw VertexNotFoundException(vertex2str(to));
         }
@@ -192,7 +193,7 @@ public:
 
     virtual bool empty()
     {
-        return (this->nodeList.size() == 0);
+        return this->nodeList.size() == 0;
     };
 
     virtual void clear()
@@ -201,6 +202,7 @@ public:
         {
             VertexNode *pVertex = *it;
             pVertex->adList.clear();
+            delete pVertex;
         }
         this->nodeList.clear();
     }
@@ -211,7 +213,7 @@ public:
         {
             throw VertexNotFoundException(vertex2str(vertex));
         }
-        VertexNode* node = this->getVertexNode(vertex);
+        VertexNode *node = this->getVertexNode(vertex);
         return node->inDegree();
     }
 
@@ -221,7 +223,7 @@ public:
         {
             throw VertexNotFoundException(vertex2str(vertex));
         }
-        VertexNode* node = this->getVertexNode(vertex);
+        VertexNode *node = this->getVertexNode(vertex);
         return node->outDegree();
     }
 
@@ -241,6 +243,11 @@ public:
         if (!this->contains(from))
         {
             throw VertexNotFoundException(vertex2str(from));
+        }
+
+        if (!this->contains(to))
+        {
+            throw VertexNotFoundException(vertex2str(to));
         }
 
         VertexNode *node = this->getVertexNode(from);
@@ -362,20 +369,21 @@ public:
 
         void connect(VertexNode *to, float weight = 0)
         {
-            // trường hợp đã kết nối với to rồi nhưng kết nối lại với trọng số khác
-            for (typename DLinkedList<Edge *>::Iterator it = this->adList.begin(); it != this->adList.end(); it++)
+            // Trường hợp đã kết nối với to rồi nhưng kết nối lại với trọng số khác
+            // chỉ cập nhật lại trọng số khác
+            if (this->getEdge(to) != nullptr)
             {
-                Edge *pEdge = *it;
-                if (pEdge->to->equals(to))
-                {
-                    pEdge->weight = weight;
-                    return;
-                }
+                this->getEdge(to)->setWeight(weight);
+                return;
             }
 
             Edge *new_edge = new Edge(this, to, weight);
             this->adList.add(new_edge);
+
+            // Đỉnh được nối tới thêm 1 bậc vào
             to->inDegree_++;
+
+            // Đỉnh hiện tại thêm 1 bậc ra
             this->outDegree_++;
         }
 
@@ -405,30 +413,24 @@ public:
 
         bool equals(VertexNode *vertex_node)
         {
-            if (vertex_node == nullptr)
-            {
-                return false;
-            }
-            if (this->vertexEQ != nullptr)
-            {
-                return this->vertexEQ(this->vertex, vertex_node->vertex);
-            }
-            else
-            {
-                return this->vertex == vertex_node->getVertex();
-            }
+            return this->vertex == vertex_node->getVertex();
         }
 
         void removeTo(VertexNode *to)
         {
+            if (to == nullptr)
+                return;
             for (typename DLinkedList<Edge *>::Iterator it = this->adList.begin(); it != this->adList.end(); it++)
             {
                 Edge *pEdge = *it;
+                if (pEdge == nullptr || pEdge->to == nullptr)
+                    continue;
                 if (pEdge->to->equals(to))
                 {
                     this->adList.removeItem(pEdge);
                     this->outDegree_--;
                     pEdge->to->inDegree_--;
+                    delete pEdge;
                     return;
                 }
             }
@@ -476,6 +478,11 @@ public:
         {
             this->from = from;
             this->to = to;
+            this->weight = weight;
+        }
+
+        void setWeight(float weight)
+        {
             this->weight = weight;
         }
 
