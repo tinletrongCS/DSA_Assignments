@@ -15,7 +15,6 @@
 #define UGRAPHMODEL_H
 
 #include "graph/AbstractGraph.h"
-// #include "AbstractGraph.h"
 //////////////////////////////////////////////////////////////////////
 ///////////// UGraphModel: Undirected Graph Model ////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -102,7 +101,6 @@ public:
         {
             throw VertexNotFoundException(AbstractGraph<T>::vertex2str(vertex));
         }
-
         for (auto it : this->nodeList)
         {
             typename AbstractGraph<T>::VertexNode *pVertex = it;
@@ -122,6 +120,7 @@ public:
         delete nodeToDelete;
     }
     static UGraphModel<T> *create(
+
         T *vertices, int nvertices, Edge<T> *edges, int nedges,
         bool (*vertexEQ)(T &, T &),
         string (*vertex2str)(T &))
@@ -130,12 +129,12 @@ public:
         UGraphModel<T> *new_graph = new UGraphModel<T>(vertexEQ, vertex2str);
         for (int i = 0; i < nvertices; i++)
         {
-            new_graph->add(vertices[i]);
+            typename AbstractGraph<T>::VertexNode* node =  new typename AbstractGraph<T>::VertexNode(vertices[i], vertexEQ, vertex2str);
+            new_graph->nodeList.add(node);
         }
         for (int i = 0; i < nedges; i++)
         {
             new_graph->connect(edges[i].from, edges[i].to, edges[i].weight);
-            new_graph->connect(edges[i].to, edges[i].from, edges[i].weight);
         }
 
         return new_graph;
