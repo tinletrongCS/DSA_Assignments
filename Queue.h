@@ -63,7 +63,7 @@ public:
 
     bool empty()
     {
-        return this->list.size() == 0;
+        return this->size() == 0;
     }
     int size()
     {
